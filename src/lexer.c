@@ -49,7 +49,7 @@ char c ;
 int line = 1 ;
 int col = 1 ;
 
-fp = fopen("input.txt", "r") ;
+fp = fopen("../tests/input.txt", "r") ;
     
 if (fp == NULL)
     
