@@ -126,8 +126,47 @@ printf("Scanning tokens...\n\n") ;
             
             printf("Line %d, Col %d: INT_LIT  -> %s\n", line, start_col, numstr);
         
+  
     }
+        
+                    else if (c == '"')
+        
+                    
+    
+    
+    {
             
+            char strval[64] ;
+            
+            int i = 0 ;
+            
+            int start_col = col ;
+
+            c = getc(fp) ;
+            
+            col++ ;
+
+            
+            while (c != '"' && c != EOF)
+            
+            {
+                
+                strval[i] = c ;
+                i++ ;
+                col++ ;
+                c = getc(fp) ;
+            }
+            
+            strval[i] = '\0'
+                ;
+        
+            col++
+                ;
+
+        printf("Line %d, Col %d: STRING   -> \"%s\"\n", line, start_col, strval);
+        
+        }
+                        
             else if (c == '\n')
       
     {
