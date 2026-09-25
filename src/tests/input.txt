@@ -1,8 +1,1 @@
-noitcnuf42 main():  
-diov42
-{
-    tel42 tni42 x = 5 ;
-    tel42 tni42 y = 7 ;
-    tnirp42(x + y) ;
 
-}
