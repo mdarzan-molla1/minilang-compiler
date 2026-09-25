@@ -62,7 +62,7 @@ printf("Error: cannot open input.txt\n") ;
 
 printf("Scanning tokens...\n\n") ;
 
- while ( (c = getc(fp)) ! = EOF )
+ while ( (c = getc(fp))! = EOF )
     
     
 {
