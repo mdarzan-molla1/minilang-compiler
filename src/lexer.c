@@ -96,7 +96,39 @@ printf("Scanning tokens...\n\n") ;
         
     }
        
-    else if (c == '\n')
+           
+    else if (isdigit(c))
+       
+    {
+           
+        char numstr[64] ;
+            int i = 0  ;
+            int start_col = col  ;
+
+            while (isdigit(c))
+                
+            { 
+                
+                numstr[i] = c
+                    ;
+
+                i++ ;
+                
+                col++;
+    
+                c = getc(fp);
+    }
+            
+            numstr[i] = '\0';
+  
+            ungetc(c, fp);
+
+            
+            printf("Line %d, Col %d: INT_LIT  -> %s\n", line, start_col, numstr);
+        
+    }
+            
+            else if (c == '\n')
       
     {
      
