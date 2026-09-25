@@ -50,29 +50,31 @@ int line = 1 ;
 int col = 1 ;
 
 fp = fopen("input.txt", "r") ;
+    
 if (fp == NULL)
+    
 {
         
-    printf("Error: cannot open input.txt\n");
+printf("Error: cannot open input.txt\n") ;
       
     return 1;
 }
 
 printf("Scanning tokens...\n\n") ;
 
-    while ((c = getc(fp)) != EOF)
+ while ( (c = getc(fp)) ! = EOF )
     
     
 {
         
-    if (isalpha(c))
+              if ( isalpha(c) )
         
 {
             char word[64] ;
             int i = 0 ;
             int start_col = col ;
 
-            while (isalpha(c) || isdigit(c) || c == '_')
+                while ( isalpha(c) || isdigit(c) || c == '_' )
             
         {
                 word[i] = c ;
@@ -86,13 +88,13 @@ printf("Scanning tokens...\n\n") ;
     
             ungetc(c, fp) ;
 
-        if (is_keyword(word))
-                
-                printf("Line %d, Col %d: KEYWORD  -> %s\n", line, start_col, word);
+    if( is_keyword(word) )
+                        
+                      printf ("Line %d, Col %d: KEYWORD  -> %s\n", line, start_col, word) ;
             
         else
             
-                printf("Line %d, Col %d: ID       -> %s\n", line, start_col, word);
+                 printf ("Line %d, Col %d: ID    -> %s\n", line, start_col, word) ;
         
     }
        
@@ -121,10 +123,10 @@ printf("Scanning tokens...\n\n") ;
             
             numstr[i] = '\0';
   
-            ungetc(c, fp);
+        ungetc (c, fp) ;
 
             
-            printf("Line %d, Col %d: INT_LIT  -> %s\n", line, start_col, numstr);
+        printf ("Line %d, Col %d: INT_LIT  -> %s\n", line, start_col, numstr) ;
         
   
     }
@@ -157,17 +159,16 @@ printf("Scanning tokens...\n\n") ;
                 c = getc(fp) ;
             }
             
-            strval[i] = '\0'
-                ;
+            strval[i] = '\0';
         
-            col++
-                ;
+            col++ ;
 
-        printf("Line %d, Col %d: STRING   -> \"%s\"\n", line, start_col, strval);
+    
+        printf ("Line %d, Col %d: STRING   -> \"%s\"\n", line, start_col, strval) ;
         
         }
                         
-            else if (c == '\n')
+               else if (c == '\n')
       
     {
      
@@ -176,21 +177,246 @@ printf("Scanning tokens...\n\n") ;
         
     }
       
-    else if (c == ' ' || c == '\t')
+else if  ( c == ' ' || c == '\t' ) 
          
     {
        
         col++ ;
         
     }
+
         
-    else
-      
+            else
+        
     {
-      
-        col++ ;
+            int start_col = col;
+
+            
+            if  ( c == '=' )
+            
+            {
+
+                
+                char next = getc(fp);
+                
+              
+                   if  (next == '=') 
+                
+                {
+                    
+              printf ("Line %d, Col %d: OP       -> ==\n", line, start_col);
+                 
+                    col += 2;
+                
+                
+                }
+                
+                
+                   else
+                
+                
+                {
+                    ungetc(next, fp);
+                
+                    
+                    printf("Line %d, Col %d: OP       -> =\n", line, start_col);
+                 
+                    col++;
+               
+                }
+                
+             
+            }
+                
+else if  (c == '<' )
+            
+            {
+                
+                char next = getc(fp);
+                
+    if (next == '=' )
+                
+                {
+                    
+                    printf ("Line %d, Col %d: OP       -> <=\n", line, start_col) ;
+                 
+                    col += 2;
+                 
+                }
+                    
+                
+                   else
+                
+                {
+                      ungetc(next, fp);
+
+
+                    
+                    printf ("Line %d, Col %d: OP       -> <\n", line, start_col);
+                 
+                     col++;
+  
+                }
+                
+            }
+                
+               else if (c == '>')
+             
+            {
+                 
+                  char next = getc(fp);
+                
+                if  (next == '=')
+                
+                {
+                  
+                    printf("Line %d, Col %d: OP       -> >=\n", line, start_col);
+                    
+                    col += 2;
+                
+                }
+                    
+                    else
+                
+                {
+                
+                    ungetc(next, fp);
+                    
+                    printf("Line %d, Col %d: OP       -> >\n", line, start_col);
+                    
+                    col++;
+           
+                
+                }
+
+                
+            }
+            
+            else if (c == '!')
+            
+            {
+                
+                char next = getc(fp) ;
+                
+                   if (next == '=')
         
-    }
+                { 
+                    
+                    printf("Line %d, Col %d: OP       -> !=\n", line, start_col);
+                 
+                    col += 2 ;
+                    
+                }
+                    
+                      else
+                
+                {
+
+                    
+                    ungetc(next, fp);
+       
+                    printf("Line %d, Col %d: OP       -> !\n", line, start_col);
+                    
+                    col++;
+              
+                }
+            
+            }
+                
+              else if (c == '&')
+            
+            {
+                
+                
+                char next = getc(fp) ;
+                
+                 if (next == '&')
+
+                    
+                {
+                    printf("Line %d, Col %d: OP       -> &&\n", line, start_col);
+                  
+                    col += 2;
+                
+                }
+                
+                else
+                
+                {
+
+                    
+                    
+                    ungetc(next, fp);
+
+
+                    
+                    col++;
+            
+            }
+            
+            }
+            
+            else if (c == '|')
+            
+            
+            {
+                
+               
+                char next = getc(fp);
+            
+                
+                if (next == '|')
+                    
+            {
+                    
+                    printf("Line %d, Col %d: OP       -> ||\n", line, start_col);
+
+                    
+                    col += 2;
+                
+                }
+                
+                else
+                
+                {
+                    
+                    ungetc(next, fp);
+                
+                    col++;
+            
+                }
+            
+            }
+            
+            else if 
+                
+                ( c == '+' || c == '-' || c == '*' || c == '/' ||
+                
+                c == '(' || c == ')' || c == '{' || c == '}' ||
+            
+                c == ';' || c == ',' || c == '.' || c == ':' )
+            
+            {
+                
+                
+                printf("Line %d, Col %d: OP   -> %c\n", line, start_col, c) ;
+            
+                col++;
+            
+            }
+            
+            else
+            
+            {
+              
+                col++;
+        
+            }
+        
+        }
+    
+        
+    
     
 }
 
