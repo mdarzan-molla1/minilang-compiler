@@ -40,3 +40,30 @@ int is_keyword(char str[64])
     return 0;
   
 }
+
+int main()
+
+{
+FILE *fp ;
+char c ;
+int line = 1 ;
+int col = 1 ;
+
+fp = fopen("input.txt", "r") ;
+if (fp == NULL)
+{
+        
+    printf("Error: cannot open input.txt\n");
+      
+    return 1;
+}
+
+printf("Scanning tokens...\n\n") ;
+
+    fclose(fp) ;
+    
+    return 0 ; 
+    
+}
+
+
