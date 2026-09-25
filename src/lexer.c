@@ -60,6 +60,70 @@ if (fp == NULL)
 
 printf("Scanning tokens...\n\n") ;
 
+    while ((c = getc(fp)) != EOF)
+    
+    
+{
+        
+    if (isalpha(c))
+        
+{
+            char word[64] ;
+            int i = 0 ;
+            int start_col = col ;
+
+            while (isalpha(c) || isdigit(c) || c == '_')
+            
+        {
+                word[i] = c ;
+                i++ ;
+                col++ ;
+                c = getc(fp) ;
+     
+        } 
+    
+            word[i] = '\0' ;
+    
+            ungetc(c, fp) ;
+
+        if (is_keyword(word))
+                
+                printf("Line %d, Col %d: KEYWORD  -> %s\n", line, start_col, word);
+            
+        else
+            
+                printf("Line %d, Col %d: ID       -> %s\n", line, start_col, word);
+        
+    }
+       
+    else if (c == '\n')
+      
+    {
+     
+        line++ ;
+        col = 1 ;
+        
+    }
+      
+    else if (c == ' ' || c == '\t')
+         
+    {
+       
+        col++ ;
+        
+    }
+        
+    else
+      
+    {
+      
+        col++ ;
+        
+    }
+    
+}
+
+ 
     fclose(fp) ;
     
     return 0 ; 
