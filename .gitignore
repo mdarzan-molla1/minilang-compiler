@@ -1,0 +1,5 @@
+# Binaries and object files
+*.exe
+*.o
+*.obj
+*.out
