@@ -1,66 +1,74 @@
-# MiniLang Compiler Design Report
+# MiniLang Compiler Lab Report
 
-**Course:** Compiler Design Lab  
-**Student Roll:** 241030042  
-**Assigned Variant:** Variant 2 (`241030042 % 4 = 2` — Structs/records, plus nested functions with static scoping)  
-**Submission Date:** September 2026  
+**Student Name:** Md Arzan Molla  
+**Roll Number:** 241030042  
+**Assigned Variant:** Variant 2 (241030042 % 4 = 2 -> Structs/records and nested functions with static scoping)  
+**Course:** Compiler Design Sessional  
 
 ---
 
 ## 1. Design Decisions
 
-### 1.1 Hand-written DFA Lexer
-Instead of using generator tools like Lex/Flex, the lexer was implemented completely by hand using a Deterministic Finite Automaton (DFA) approach in `src/lexer.c`.
-- **State Transition Logic:** The lexer transitions between well-defined states (`STATE_START`, `STATE_IDENTIFIER`, `STATE_INT_LIT`, `STATE_STRING_LIT`, and operator lookaheads for two-character tokens like `==`, `!=`, `<=`, `>=`, `&&`, `||`).
-- **Precise Error Reporting:** Two tracking counters (`line` and `col`) are updated character-by-character. Whenever an illegal symbol or unterminated string literal is detected, an explicit error message specifying the exact line and column is printed.
-- **Roll-Derived Keyword Mapping:** Keywords are transformed using the rule: reversing the standard English keyword name and appending `42` (the last two digits of roll number `241030042`), such as `tcurts42` for `struct` and `noitcnuf42` for `function`.
+For this lab project, I had to build a working compiler front-end and back-end for MiniLang. Because my roll is 241030042, my remainder modulo 4 is 2. So my required language features are user-defined structs (records) and nested functions with static scoping.
 
-### 1.2 Recursive-Descent LL(1) Parser & AST
-The grammar was designed from scratch to be LL(1) parseable without backtracking.
-- **Left-Recursion Elimination:** Standard arithmetic grammar has left recursion ($E \to E + T$), which induces infinite recursion in recursive-descent parsers. All arithmetic and logical productions were rewritten into iterative/tail-recursive LL(1) forms ($E \to T E'$, $E' \to + T E' \mid \epsilon$).
-- **Left-Factoring:** Ambiguities such as the dangling `else` in `fi42 ... esle42` and postfix expressions (`id`, `id(...)`, `id.field`) were factored out using explicit optional tail productions (`ElseOpt`, `PostfixOpt`).
-- **AST Architecture:** The Abstract Syntax Tree is implemented via tagged unions in `ASTNode`, cleanly modeling declarations, statements, binary/unary expressions, struct definitions, and nested functions.
+Here are the main design choices I made while building each phase:
 
-### 1.3 Static Scoping & Symbol Table Architecture
-Variant 2 requires nested functions with static (lexical) scoping.
-- **Scope Hierarchy:** The symbol table is structured as an upward-pointing tree of `Scope` objects. Each scope maintains a `parent` pointer representing its enclosing lexical environment.
-- **Lexical Resolution:** When resolving an identifier, `scope_lookup` searches the current scope's symbol list. If not found, it traverses upward along the `parent` pointer chain until either the symbol is found or the global scope is reached. This directly enforces static scoping rules for nested functions.
-- **Semantic Error Checking:** The semantic analyzer performs type propagation and detects five distinct semantic errors: (1) Undeclared identifiers, (2) Duplicate declarations in the same scope, (3) Assignment and arithmetic type mismatches, (4) Invalid struct field access, and (5) Function return type mismatches.
+### 1.1 Hand-written Lexer (DFA)
+Our teacher asked us not to use Lex or Flex. I wrote the lexer from scratch in `src/lexer.c` using a basic DFA approach. It reads the source code character by character and tracks `line` and `col` numbers so that if someone types an invalid symbol or forgets to close a string quote, it prints the exact line and column number. 
+For keywords, my roll ends in 42, so I reversed the normal English words and added 42 at the end (for example, `struct` becomes `tcurts42`, `function` becomes `noitcnuf42`, `let` becomes `tel42`, and `print` becomes `tnirp42`).
 
-### 1.4 Intermediate Representation (TAC) & Optimizations
-- **Three-Address Code (TAC):** Expressions and high-level control structures are linearized into simple instructions of at most three operands (`res = arg1 op arg2`). This separates language-specific syntax from code generation.
-- **Constant Folding:** A peephole optimization pass inspects binary operations with known integer literals and evaluates them at compile-time (e.g. `t1 = 10 + 20` $\to$ `t1 = 30`).
-- **Dead Code Elimination (DCE):** Eliminates unreachable instructions immediately following unconditional control transfers (`goto` and `return`), as well as unused temporary variables.
+### 1.2 Recursive-Descent Parser & AST
+I used recursive-descent parsing because it is easy to write by hand and debug.
+- **Removing Left Recursion:** The standard expression grammar `E -> E + T | T` cannot be parsed with recursive descent because the function calls itself without consuming any input, causing infinite recursion. I removed left recursion by splitting it into `E -> T E'` and `E' -> + T E' | epsilon`.
+- **Left Factoring:** For `if` and `if-else` statements, both start with `fi42 (condition)`. To avoid backtracking with 1 token lookahead, I factored out the optional `esle42` part into an `ElseOpt` helper rule.
+- **AST Representation:** In `src/ast.c` and `src/ast.h`, I used C structs with tagged unions (`ASTNode`) to store nodes like variable declarations, struct definitions, if-statements, function calls, and binary expressions.
 
-### 1.5 Backend: Stack-Machine & Virtual Machine Runner
-- Rather than emitting complex architecture-dependent assembly with system ABI overhead, the backend lowers TAC into stack-machine bytecode instructions (`PUSH_INT`, `STORE_VAR`, `LOAD_VAR`, `ADD`, `CALL`, `RET`, `ALLOC_STRUCT`, `GET_FIELD`, `SET_FIELD`).
-- An execution engine simulates the stack machine with an explicit activation frame call-stack and heap-allocated records for structs.
+### 1.3 Symbol Table and Static Scoping
+Because Variant 2 requires nested functions, the compiler must support lexical scoping. I built the symbol table as a tree of scopes in `src/symbol_table.c`. Each `Scope` struct has a `parent` pointer. 
+When a variable is looked up inside a nested function, the lookup function first checks the local scope. If it is not found there, it follows the `parent` pointer up to the enclosing function's scope. This allows inner functions to read and write variables from outer functions.
+I also wrote semantic checks in `src/semantic.c` to catch 5 specific errors:
+1. Using an undeclared variable or function.
+2. Declaring the same variable twice in the same scope.
+3. Assigning the wrong type (like putting a string into an int variable).
+4. Accessing a struct field that doesn't exist.
+5. Returning the wrong type from a function.
+
+### 1.4 Intermediate Code (TAC) and Optimizations
+Instead of going straight to assembly, I generated Three-Address Code (TAC) in `src/tac.c`. This breaks complex expressions into simple lines with temporary variables (like `t1 = a + b`).
+On top of TAC, I wrote two simple optimizations in `src/optimizer.c`:
+- **Constant Folding:** If both operands in an operation are numbers (like `10 + 20`), the optimizer calculates `30` at compile time so the runtime doesn't have to compute it.
+- **Dead Code Elimination:** Any instructions placed right after an unconditional `return` or `goto` (before the next label) can never run, so the optimizer removes them.
+
+### 1.5 Backend and Virtual Machine
+To execute the program, I wrote a small stack machine in `src/vm.c`. The compiler translates TAC into bytecode instructions like `PUSH_INT`, `STORE_VAR`, `LOAD_VAR`, `ADD`, `CALL`, and `RET`. A virtual machine runner then loops through these instructions with a call stack and executes the program. For structs, it allocates dynamic objects and gets/sets fields by name.
 
 ---
 
-## 2. A Bug Encountered & Debugging Process
+## 2. A Bug I Encountered and How I Debugged It
 
-### The Bug: Nested Function Scope Resolution and Calling Convention
-During the initial implementation of Variant 2, executing `test06_nested_functions.ml` produced two severe issues:
-1. **Semantic Bug:** The compiler threw a semantic error stating that local variables declared in the outer function were "undeclared" inside the nested function.
-2. **Runtime Bug:** When calling a nested function or a function with parameters, the parameters evaluated to `0` and returned incorrect computation results.
+### The Problem
+When I started testing nested functions with `tests/test06_nested_functions.ml`, I ran into an annoying bug. In that test, an outer function `compute` has a local variable `tel42 tni42 factor = 5;` and then defines a nested function `noitcnuf42 helper(...)` which uses `factor`.
 
-### Root Cause Analysis:
-1. **Scope Timing Issue:** In the initial parser implementation, nested function declarations (`nested_funcs`) were stored in a separate list from regular statements. During semantic analysis, the compiler checked all nested functions *before* checking the surrounding function's body statements. Consequently, local variables defined before the nested function were not yet inserted into the outer function's scope when the nested function was checked.
-2. **Calling Convention Mismatch:** In the stack machine, the caller pushed arguments left-to-right (`param a1`, `param a2`), putting `a2` on the top of the operand stack. However, the callee was not popping the stack items into its local activation record upon entry, leaving parameter values uninitialized.
+When I compiled it, two things went wrong:
+1. The semantic checker printed an error saying `factor` was an undeclared identifier inside `helper`.
+2. Even when I tried running it, when functions took parameters, the parameters showed up as `0` inside the function body.
 
-### How It Was Debugged & Resolved:
-1. **Unified AST Sequence:** The parser was restructured to store nested function declarations directly within the function body's linear statement block (`body->as.block.statements`). During semantic analysis, statements and nested functions are traversed in strict textual order, allowing nested functions to see previously declared local variables via the `parent` scope link.
-2. **Stack Callee Parameter Binding (`TAC_PARAM_POP`):** We introduced a `TAC_PARAM_POP` instruction. At function entry, the compiler pops values from the stack in reverse parameter order into the callee's frame variables (adhering to standard `cdecl` calling convention).
-3. **Execution Skip Jump:** To prevent linear fall-through execution of nested functions within the outer function's body, the compiler emits an unconditional jump (`goto L_skip`) around nested function definitions.
+### Debugging Steps
+I opened `src/parser.c` and `src/semantic.c` and added print statements to see what was happening.
+1. First, I found that my parser was storing all nested function declarations in a separate list called `nested_funcs`, outside the normal list of body statements. In `semantic.c`, my code was checking `nested_funcs` before checking the regular statements of the outer function. Because `factor` was declared as a statement in the outer function, it hadn't been added to the symbol table yet when `helper` was being checked!
+2. Second, in my stack machine backend, when calling a function with arguments `a` and `b`, the caller pushed `a` and then `b`. But upon entering the function, I hadn't written any code to pop those values off the stack into the parameter variables. So the parameters stayed uninitialized (zero).
 
-After these fixes, `test06_nested_functions.ml` and `test10_complex_integration.ml` compiled cleanly and produced exact outputs.
+### The Fix
+1. In `src/parser.c`, I changed the parser so that nested functions are kept in the exact same statement list as other statements. That way, the semantic checker visits `factor = 5;` first, registers it in the outer scope, and then visits the nested function `helper`. Since `helper`'s scope points to the outer scope as its parent, it finds `factor` easily.
+2. In `src/tac.c`, I added a `TAC_PARAM_POP` instruction. When a function starts, it pops values off the stack in reverse order and stores them into the parameter variables.
+3. I also added a jump (`goto L_skip`) around nested function bodies so that when the outer function runs linearly, it doesn't accidentally fall into the nested function's code.
+
+After making these changes, `test06_nested_functions.ml` printed `25` as expected, and `test10_complex_integration.ml` worked properly too.
 
 ---
 
 ## 3. One Thing I Would Change
 
-If I were to redesign or extend this compiler, the primary change I would make is **implementing a register allocator (Linear Scan or Graph-Coloring) to emit native x86-64 machine assembly instead of an interpreted Stack-Machine Bytecode**.
+If I had more time to work on this compiler, the main thing I would change is the backend code generator. Right now, it outputs stack-machine bytecode that runs inside an interpreter. 
 
-While the stack-machine bytecode interpreter is highly portable and easy to verify, emitting real x86-64 assembly instructions (or RISC-V) would allow the compiler to interface directly with operating system system calls and standard C libraries without requiring an interpreter runtime. In addition:
-- Struct records are currently allocated on a simple dynamic heap without garbage collection. Adding a mark-and-sweep or reference-counting garbage collector would prevent memory leaks during long-running programs.
+While this was straightforward to implement and debug for the lab, an interpreted stack machine is much slower than native code. If I were doing this again, I would write an x86-64 code generator that outputs actual GNU assembler (`.s`) files. That would allow the programs to be compiled with `gcc` into real standalone executables on Windows or Linux, and I could learn how CPU registers and real calling conventions work. I would also add a simple garbage collector for struct instances, because right now heap structs are allocated with `calloc` but never freed during execution.
